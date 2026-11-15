@@ -169,8 +169,8 @@ private suspend fun downloadBook(book: Novel): String = withContext(Dispatchers.
     try {
         var text = connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
         val starts = listOf("*** START OF THE PROJECT GUTENBERG", "*** START OF THIS PROJECT GUTENBERG")
-        starts.map { text.indexOf(it, true) }.filter { it >= 0 }.minOrNull()?.let { pos -> text.indexOf('\n', pos).takeIf { it >= 0 }?.let { text = text.substring(it + 1) } }
-        listOf("*** END OF THE PROJECT GUTENBERG", "*** END OF THIS PROJECT GUTENBERG").map { text.indexOf(it, true) }.filter { it >= 0 }.minOrNull()?.let { text = text.substring(0, it) }
+        starts.map { text.indexOf(it, 0, true) }.filter { it >= 0 }.minOrNull()?.let { pos -> text.indexOf('\n', pos).takeIf { it >= 0 }?.let { text = text.substring(it + 1) } }
+        listOf("*** END OF THE PROJECT GUTENBERG", "*** END OF THIS PROJECT GUTENBERG").map { text.indexOf(it, 0, true) }.filter { it >= 0 }.minOrNull()?.let { text = text.substring(0, it) }
         text.trim()
     } finally { connection.disconnect() }
 }
@@ -192,7 +192,7 @@ fun JianYueApp() {
     var settingsOpen by remember { mutableStateOf(false) }
     var fontSize by remember { mutableFloatStateOf(stored.getFloat("font_size", 19f)) }
     var lineSpacing by remember { mutableFloatStateOf(stored.getFloat("line_spacing", 1.85f)) }
-    var paragraphSpacing by remember { mutableFloatStateOf(stored.getFloat("paragraph_spacing", 1)) }
+    var paragraphSpacing by remember { mutableFloatStateOf(stored.getFloat("paragraph_spacing", 1f)) }
     var letterSpacing by remember { mutableFloatStateOf(stored.getFloat("letter_spacing", 0f)) }
     var pageMargin by remember { mutableFloatStateOf(stored.getFloat("page_margin", 18f)) }
     var fontChoice by remember { mutableStateOf(stored.getString("font_family", "默认") ?: "默认") }
