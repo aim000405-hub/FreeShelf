@@ -12,6 +12,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -259,10 +261,11 @@ fun JianYueApp() {
                 }
             } else if (selected != null) {
                 val book = selected!!
+                val paragraphs = remember(book.id, readerText) { readerText.replace("\\r", "").split(Regex("\\n\\s*\\n")) }
                 val savedPosition = stored.getInt("progress_${book.id}", 0)
-                val scroll = rememberScrollState(savedPosition)
-                LaunchedEffect(book.id, scroll.value) {
-                    stored.edit().putInt("progress_${book.id}", scroll.value).apply()
+                val scroll = rememberLazyListState(initialFirstVisibleItemIndex = savedPosition.coerceIn(0, (paragraphs.size - 1).coerceAtLeast(0)))
+                LaunchedEffect(book.id, scroll.firstVisibleItemIndex) {
+                    stored.edit().putInt("progress_${book.id}", scroll.firstVisibleItemIndex).apply()
                 }
                 Column(Modifier.fillMaxSize()) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -283,12 +286,11 @@ fun JianYueApp() {
                     if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
                     if (error.isNotBlank()) Text(error, color = Color(0xFFB65D55), modifier = Modifier.padding(horizontal = 18.dp))
                     if (!loading && readerText.isNotBlank()) {
-                        val paragraphs = readerText.replace("\r", "").split(Regex("\\n\\s*\\n"))
-                        Column(Modifier.weight(1f).verticalScroll(scroll).padding(horizontal = pageMargin.dp, vertical = 10.dp)) {
-                            paragraphs.forEachIndexed { index, paragraph ->
+                        LazyColumn(state = scroll, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = pageMargin.dp, vertical = 10.dp)) {
+                            itemsIndexed(paragraphs, key = { index, _ -> index }) { _, paragraph ->
                                 Text(paragraph.trim(), color = fg, fontSize = fontSize.sp, lineHeight = (fontSize * lineSpacing).sp,
                                     letterSpacing = letterSpacing.sp, fontFamily = fontFamily,
-                                    modifier = Modifier.padding(bottom = (paragraphSpacing * fontSize).dp))
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = (paragraphSpacing * fontSize).dp))
                             }
                         }
                     } else if (!loading) {
@@ -297,10 +299,10 @@ fun JianYueApp() {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("阅读进度", color = fg.copy(alpha = .65f), fontSize = 11.sp)
                         Spacer(Modifier.width(8.dp))
-                        Text(if (scroll.maxValue > 0) "${(scroll.value * 100 / scroll.maxValue).coerceIn(0, 100)}%" else "0%", color = fg, fontSize = 11.sp)
+                        Text(if (paragraphs.size > 1) "${(scroll.firstVisibleItemIndex * 100 / (paragraphs.size - 1)).coerceIn(0, 100)}%" else "0%", color = fg, fontSize = 11.sp)
                         Spacer(Modifier.weight(1f))
-                        TextButton(onClick = { scope.launch { scroll.animateScrollTo(0) } }) { Text("回到顶部") }
-                        TextButton(onClick = { scope.launch { scroll.animateScrollTo(scroll.maxValue) } }) { Text("到底部") }
+                        TextButton(onClick = { scope.launch { scroll.animateScrollToItem(0) } }) { Text("回到顶部") }
+                        TextButton(onClick = { scope.launch { scroll.animateScrollToItem((paragraphs.size - 1).coerceAtLeast(0)) } }) { Text("到底部") }
                     }
                 }
             } else {
