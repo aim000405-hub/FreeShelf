@@ -97,18 +97,18 @@ private suspend fun readLocalBook(context: Context, uri: Uri, displayName: Strin
                     if ((name.endsWith(".xhtml") || name.endsWith(".html") || name.endsWith(".htm")) && !name.contains("nav")) {
                         val html = zip.readBytes().toString(Charsets.UTF_8)
                         val text = html.replace(Regex("(?is)<(script|style)[^>]*>.*?</\\1>"), "")
-                            .replace(Regex("(?i)</(p|div|h[1-6]|br|li|tr|section)>"), "\\n\\n")
+                            .replace(Regex("(?i)</(p|div|h[1-6]|br|li|tr|section)>"), "\n\n")
                             .replace(Regex("<[^>]+>"), " ")
                             .replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<")
                             .replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")
-                            .replace(Regex("[ \\t]+"), " ").replace(Regex("\\n[ \\t]+"), "\\n").trim()
+                            .replace(Regex("[ \\t]+"), " ").replace(Regex("\\n[ \\t]+"), "\n").trim()
                         if (text.isNotBlank()) entries.add(entry.name to text)
                     }
                     zip.closeEntry()
                     entry = zip.nextEntry
                 }
             }
-            entries.sortedBy { it.first }.joinToString("\\n\\n") { it.second }.also {
+            entries.sortedBy { it.first }.joinToString("\n\n") { it.second }.also {
                 if (it.isBlank()) error("未能从 EPUB 文件中提取正文")
             }
         } else {
